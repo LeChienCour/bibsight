@@ -1,8 +1,8 @@
 import re
 
+import easyocr
 import numpy as np
 import structlog
-from paddleocr import PaddleOCR
 
 from src.config import settings
 
@@ -21,19 +21,14 @@ def _extract_bib(text: str) -> str | None:
 class BibReader:
     def __init__(self) -> None:
         use_gpu = settings.device == "cuda"
-        self._ocr = PaddleOCR(use_angle_cls=True, lang="en", use_gpu=use_gpu, show_log=False)
-        log.info("paddleocr_loaded", gpu=use_gpu)
+        self._ocr = easyocr.Reader(["en"], gpu=use_gpu, verbose=False)
+        log.info("easyocr_loaded", gpu=use_gpu)
 
     def read(self, crop: np.ndarray) -> tuple[str | None, float]:
-        """Return (bib_number, confidence). bib_number is None if not found."""
-        result = self._ocr.ocr(crop, cls=True)
-
-        if not result or not result[0]:
-            return None, 0.0
+        results = self._ocr.readtext(crop, detail=1)
 
         candidates: list[tuple[str, float]] = []
-        for line in result[0]:
-            text, conf = line[1]
+        for _, text, conf in results:
             if conf < settings.ocr_min_conf:
                 continue
             bib = _extract_bib(text)
@@ -43,6 +38,5 @@ class BibReader:
         if not candidates:
             return None, 0.0
 
-        # Prefer longest bib (more digits = more specific), then highest conf
         best = max(candidates, key=lambda x: (len(x[0]), x[1]))
         return best
