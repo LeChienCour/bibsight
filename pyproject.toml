@@ -1,6 +1,6 @@
 [build-system]
 requires = ["setuptools>=68", "wheel"]
-build-backend = "setuptools.backends.legacy:build"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "bibsight"
@@ -8,13 +8,12 @@ version = "0.1.0"
 requires-python = ">=3.11"
 dependencies = [
     "ultralytics>=8.3",
-    "paddleocr>=2.7",
-    "paddlepaddle-gpu",
+    "easyocr>=1.7",
     "insightface>=0.7",
     "onnxruntime-gpu",
-    "numpy>=1.26",
+    "numpy>=2.0",
     "pillow>=10",
-    "opencv-python-headless>=4.9",
+    "opencv-python-headless>=4.10",
     "pydantic-settings>=2.0",
     "structlog>=24",
 ]
