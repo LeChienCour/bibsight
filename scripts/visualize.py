@@ -14,6 +14,14 @@ from pathlib import Path
 import cv2
 
 
+def _put_label(frame, text: str, x: int, y: int, color: tuple, font_scale: float = 0.6, thickness: int = 2) -> None:
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    (tw, th), baseline = cv2.getTextSize(text, font, font_scale, thickness)
+    top = max(y - th - baseline - 4, 0)
+    cv2.rectangle(frame, (x, top), (x + tw + 4, top + th + baseline + 4), (0, 0, 0), -1)
+    cv2.putText(frame, text, (x + 2, top + th + 2), font, font_scale, color, thickness)
+
+
 def _draw_frame(frame, detections: list[dict]) -> None:
     for det in detections:
         x1, y1, x2, y2 = det["person_bbox"]
@@ -25,8 +33,12 @@ def _draw_frame(frame, detections: list[dict]) -> None:
         color = (0, 255, 0) if bib else (0, 200, 255)
         cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
 
-        label = f"{bib} ({det.get('bib_conf', 0):.2f})" if bib else f"person {conf:.2f}"
-        cv2.putText(frame, label, (x1, max(y1 - 6, 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+        if bib:
+            # large bib number + confidence
+            _put_label(frame, f"#{bib}", x1, y1, color, font_scale=0.9, thickness=2)
+            _put_label(frame, f"{det.get('bib_conf', 0):.0%}", x1, y1 - 28, (200, 200, 200), font_scale=0.5, thickness=1)
+        else:
+            _put_label(frame, f"person {conf:.2f}", x1, y1, color, font_scale=0.55, thickness=1)
 
         if has_face:
             fx1, fy1, fx2, fy2 = det["face_bbox"]
@@ -66,6 +78,12 @@ def run(input_path: Path, results_path: Path, output_path: Path) -> None:
         # persist last detections up to 2 seconds worth of frames
         active = last_detections if (frame_idx - last_analyzed) <= int(fps * 2) else []
         _draw_frame(frame, active)
+
+        # top-left HUD: unique bibs visible in this frame
+        bibs_in_frame = [d["bib_number"] for d in active if d.get("bib_number")]
+        hud = f"Bibs: {', '.join(sorted(set(bibs_in_frame)))}" if bibs_in_frame else "Bibs: —"
+        _put_label(frame, hud, 8, 30, (0, 255, 255), font_scale=0.65, thickness=2)
+
         writer.write(frame)
         frame_idx += 1
 

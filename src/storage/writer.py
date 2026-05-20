@@ -3,6 +3,8 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
+import cv2
+import numpy as np
 import structlog
 
 from src.linking.linker import LinkedDetection
@@ -26,17 +28,38 @@ def _serialize(result: ImageResult) -> dict:
     return d
 
 
-def write_image_result(result: ImageResult, output_dir: Path) -> Path:
+def write_image_result(
+    result: ImageResult, output_dir: Path, image: np.ndarray | None = None
+) -> Path:
     images_dir = output_dir / "images"
     images_dir.mkdir(parents=True, exist_ok=True)
 
     stem = Path(result.filename).stem
-    out_path = images_dir / f"{stem}.json"
 
+    if image is not None:
+        jpg_path = images_dir / f"{stem}.jpg"
+        bgr = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        cv2.imwrite(str(jpg_path), bgr, [cv2.IMWRITE_JPEG_QUALITY, 95])
+
+    out_path = images_dir / f"{stem}.json"
     with out_path.open("w", encoding="utf-8") as f:
         json.dump(_serialize(result), f, indent=2, ensure_ascii=False)
 
     log.info("wrote_image_result", path=str(out_path), detections=len(result.detections))
+    return out_path
+
+
+def write_tracks(tracks: list[dict], output_dir: Path) -> Path:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    out_path = output_dir / "tracks.json"
+    payload = {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "total_tracks": len(tracks),
+        "tracks": tracks,
+    }
+    with out_path.open("w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2, ensure_ascii=False)
+    log.info("wrote_tracks", path=str(out_path), tracks=len(tracks))
     return out_path
 
 
