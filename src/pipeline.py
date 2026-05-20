@@ -53,7 +53,13 @@ def _process_record(
         x1, y1, x2, y2 = person.bbox
         crop = record.image[y1:y2, x1:x2]
 
-        bib_text, bib_conf = bib_reader.read(crop)
+        # Heuristic bib zone: torso area (30–70% height, full width)
+        h = y2 - y1
+        bib_y1 = int(h * 0.30)
+        bib_y2 = int(h * 0.70)
+        bib_crop = crop[bib_y1:bib_y2, :]
+
+        bib_text, bib_conf = bib_reader.read(bib_crop)
         embedding, face_bbox = embedder.embed(crop)
 
         linked.append(
