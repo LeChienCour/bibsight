@@ -12,6 +12,7 @@ import json
 from pathlib import Path
 
 import cv2
+from tqdm import tqdm
 
 
 def _put_label(frame, text: str, x: int, y: int, color: tuple, font_scale: float = 0.6, thickness: int = 2) -> None:
@@ -65,27 +66,31 @@ def run(input_path: Path, results_path: Path, output_path: Path) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     writer = cv2.VideoWriter(str(output_path), cv2.VideoWriter_fourcc(*"mp4v"), fps, (w, h))
 
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or None
+
     frame_idx = 0
     last_detections: list[dict] = []
     last_analyzed = -999
-    while True:
-        ok, frame = cap.read()
-        if not ok:
-            break
-        if frame_idx in by_frame:
-            last_detections = by_frame[frame_idx]
-            last_analyzed = frame_idx
-        # persist last detections up to 2 seconds worth of frames
-        active = last_detections if (frame_idx - last_analyzed) <= int(fps * 2) else []
-        _draw_frame(frame, active)
+    with tqdm(total=total_frames, unit="frame", desc="Rendering") as pbar:
+        while True:
+            ok, frame = cap.read()
+            if not ok:
+                break
+            if frame_idx in by_frame:
+                last_detections = by_frame[frame_idx]
+                last_analyzed = frame_idx
+            # persist last detections up to 2 seconds worth of frames
+            active = last_detections if (frame_idx - last_analyzed) <= int(fps * 2) else []
+            _draw_frame(frame, active)
 
-        # top-left HUD: unique bibs visible in this frame
-        bibs_in_frame = [d["bib_number"] for d in active if d.get("bib_number")]
-        hud = f"Bibs: {', '.join(sorted(set(bibs_in_frame)))}" if bibs_in_frame else "Bibs: —"
-        _put_label(frame, hud, 8, 30, (0, 255, 255), font_scale=0.65, thickness=2)
+            # top-left HUD: unique bibs visible in this frame
+            bibs_in_frame = [d["bib_number"] for d in active if d.get("bib_number")]
+            hud = f"Bibs: {', '.join(sorted(set(bibs_in_frame)))}" if bibs_in_frame else "Bibs: —"
+            _put_label(frame, hud, 8, 30, (0, 255, 255), font_scale=0.65, thickness=2)
 
-        writer.write(frame)
-        frame_idx += 1
+            writer.write(frame)
+            frame_idx += 1
+            pbar.update(1)
 
     cap.release()
     writer.release()
