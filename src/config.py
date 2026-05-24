@@ -14,7 +14,7 @@ class Settings(BaseSettings):
 
     ocr_min_conf: float = 0.7
 
-    video_frame_step: int = 5  # process 1 of every N frames
+    video_frame_step: int = 2  # process 1 of every N frames
 
     input_dir: Path = Path("data/images")
     output_dir: Path = Path("results")

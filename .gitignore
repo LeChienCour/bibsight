@@ -12,6 +12,15 @@ build/
 .coverage
 htmlcov/
 
+# YOLO / ML model weights
+*.pt
+*.onnx
+*.pth
+
+# System packages
+*.deb
+*.rpm
+
 # Datos y modelos (grandes, no en repo)
 models/
 data/

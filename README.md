@@ -43,17 +43,23 @@ python -c "from ultralytics import YOLO; YOLO('yolov8x.pt')"
 ## Usage
 
 ```bash
-# process a video
-make run-video VIDEO=data/videos/race.mp4
+# process a video (outputs → results/<RUN>/)
+make run-video VIDEO=data/videos/race.mp4 RUN=my_race
 
 # process a folder of images
-make run INPUT=data/images/
+make run INPUT=data/images/ RUN=my_race
 
 # render bounding boxes onto video
-make visualize VIDEO=data/videos/race.mp4
+make visualize VIDEO=data/videos/race.mp4 RUN=my_race
 
-# clean outputs
-make clean
+# find all photos for a bib number
+make search RUN=my_race BIB=166
+
+# show all available targets
+make help
+
+# clean outputs for a run
+make clean RUN=my_race
 ```
 
 ### Environment variables (prefix `RPT_`)
@@ -62,7 +68,7 @@ make clean
 |---|---|---|
 | `RPT_YOLO_MODEL` | `yolov8n.pt` | YOLO weights file |
 | `RPT_DEVICE` | `cuda` | `cuda` or `cpu` |
-| `RPT_VIDEO_FRAME_STEP` | `5` | Sample 1 of every N frames |
+| `RPT_VIDEO_FRAME_STEP` | `2` | Sample 1 of every N frames |
 | `RPT_YOLO_CONF_PERSON` | `0.5` | Person detection confidence threshold |
 | `RPT_OCR_MIN_CONF` | `0.7` | Minimum OCR confidence to accept a bib reading |
 
@@ -70,13 +76,15 @@ Create a `.env` file in the repo root to override defaults.
 
 ## Output
 
+Outputs land in `results/<RUN>/` (default: `results/default/`).
+
 | File | Description |
 |---|---|
-| `results/tracks.json` | Authoritative per-runner table: bib, embedding, photo list |
-| `results/batch_results.json` | Per-frame detections (raw, before majority vote) |
-| `results/images/*.jpg` | Extracted frames at 95% JPEG quality |
-| `results/images/*.json` | Per-frame metadata |
-| `results/visualized.mp4` | Debug video with bounding boxes overlaid |
+| `results/<RUN>/tracks.json` | Authoritative per-runner table: bib, embedding, photo list |
+| `results/<RUN>/batch_results.json` | Per-frame detections (raw, before majority vote) |
+| `results/<RUN>/images/*.jpg` | Extracted frames at 95% JPEG quality |
+| `results/<RUN>/images/*.json` | Per-frame metadata |
+| `results/<RUN>/visualized.mp4` | Debug video with bounding boxes overlaid |
 
 ### `tracks.json` schema
 
